@@ -44,6 +44,7 @@ const PowerFlow = ({ pvPower, pv1Power, pv2Power, loadPower, pCharge, pDischarge
   const isCharging = pCharge > 10;
   const isDischarging = pDischarge > 10;
   const batteryPower = isCharging ? pCharge : isDischarging ? pDischarge : 0;
+  const isActive = pvPower > 10 || loadPower > 10 || batteryPower > 10;
   
   const formatWatts = (w: number) => {
     if (w >= 1000) return `${(w / 1000).toFixed(2)} kW`;
@@ -72,7 +73,7 @@ const PowerFlow = ({ pvPower, pv1Power, pv2Power, loadPower, pCharge, pDischarge
 
         {/* Total Solar Node */}
         <div className="flex flex-col items-center relative w-16">
-          <div className="absolute -top-10 text-[10px] uppercase tracking-widest font-semibold text-zinc-500 whitespace-nowrap">Live Power Flow</div>
+          <div className="absolute -top-10 text-[16px] uppercase tracking-widest font-semibold text-zinc-500 whitespace-nowrap">Live Power Flow</div>
           <div className="w-16 h-16 rounded-full bg-[#050505] flex items-center justify-center z-10">
             <div className="w-full h-full rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.15)]">
               <Sun size={32} />
@@ -129,8 +130,32 @@ const PowerFlow = ({ pvPower, pv1Power, pv2Power, loadPower, pCharge, pDischarge
 
         {/* Inverter Node */}
         <div className="flex flex-col items-center w-48">
-          <div className="w-20 h-20 rounded-2xl bg-zinc-900/50 flex items-center justify-center text-zinc-300 shadow-2xl relative z-20">
-            <Activity size={36} className={pvPower > 10 || loadPower > 10 || batteryPower > 10 ? "text-white" : "text-zinc-600"} />
+          <div className="w-[120px] h-[120px] rounded-2xl bg-[#050505] border border-zinc-800/50 flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.8)] relative z-20 overflow-hidden">
+            <svg width="112" height="112" viewBox="0 0 100 100" className="absolute inset-auto">
+              {/* Outer dashed ring */}
+              <g className={cn("origin-center transition-all duration-500", isActive ? "animate-[spin_12s_linear_infinite]" : "")}>
+                <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="4 8" className="text-zinc-700" />
+                <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="6" strokeDasharray="10 10" className="text-zinc-800" />
+              </g>
+              {/* Inner rotating elements */}
+              <g className={cn("origin-center transition-all duration-500", isActive ? "animate-[spin_8s_linear_infinite_reverse]" : "")}>
+                <circle cx="50" cy="50" r="28" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="6 6" className="text-zinc-600" />
+                {/* 4 small arrows/triangles pointing inward */}
+                <polygon points="50,14 54,22 46,22" fill="currentColor" className={isActive ? "text-emerald-500/40" : "text-zinc-700"} />
+                <polygon points="50,86 46,78 54,78" fill="currentColor" className={isActive ? "text-emerald-500/40" : "text-zinc-700"} />
+                <polygon points="14,50 22,46 22,54" fill="currentColor" className={isActive ? "text-emerald-500/40" : "text-zinc-700"} />
+                <polygon points="86,50 78,54 78,46" fill="currentColor" className={isActive ? "text-emerald-500/40" : "text-zinc-700"} />
+              </g>
+              {/* Central Sine Wave (DC to AC conversion) */}
+              <path 
+                d="M 32 50 Q 41 30 50 50 T 68 50" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="4" 
+                strokeLinecap="round"
+                className={cn("transition-colors duration-500", isActive ? "text-emerald-400" : "text-zinc-600")} 
+              />
+            </svg>
           </div>
           <div className="text-[10px] uppercase tracking-widest text-zinc-500 mt-3 text-center">EG4 6000XP Inverter</div>
         </div>
@@ -209,6 +234,18 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [weather, setWeather] = useState<{ temp: number; code: number; isDay: number } | null>(null);
+  const [timeUntilUpdate, setTimeUntilUpdate] = useState(REFRESH_INTERVAL);
+
+  // Countdown timer logic
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeUntilUpdate(prev => {
+        if (prev <= 1000) return REFRESH_INTERVAL;
+        return prev - 1000;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lastUpdated]);
 
   // Fetch weather data
   useEffect(() => {
@@ -318,6 +355,7 @@ export default function App() {
       const formattedHistory = Object.values(timeMap).sort((a, b) => a.time - b.time);
       setHistoryData(formattedHistory);
       setLastUpdated(new Date());
+      setTimeUntilUpdate(REFRESH_INTERVAL);
       setError(null);
     } catch (err: any) {
       console.error('Data fetch error', err);
@@ -405,10 +443,63 @@ export default function App() {
               </div>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-4 items-center">
+            {/* Circular Countdown Timer */}
+            <div className="flex flex-col items-center">
+              <span className="text-[9px] uppercase tracking-widest text-zinc-500 mb-1">Next Update</span>
+              <div className="relative w-16 h-16 flex items-center justify-center" title={`Next update in ${Math.ceil(timeUntilUpdate / 1000)}s`}>
+                
+                {/* Explosion Animation */}
+                {timeUntilUpdate <= 1000 && (
+                  <>
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0.8 }}
+                      animate={{ scale: 2.5, opacity: 0 }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                      className="absolute inset-0 rounded-full bg-emerald-500/30 blur-md z-0"
+                    />
+                    <motion.div
+                      initial={{ scale: 1, opacity: 1 }}
+                      animate={{ scale: 2, opacity: 0 }}
+                      transition={{ duration: 0.6, ease: "easeOut" }}
+                      className="absolute inset-0 rounded-full border-2 border-emerald-400 z-0"
+                    />
+                  </>
+                )}
+
+                <svg className="w-full h-full transform -rotate-90 relative z-10" viewBox="0 0 36 36">
+                  {/* Background Circle */}
+                  <path
+                    className="text-zinc-800"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  {/* Progress Circle */}
+                  <path
+                    className="text-emerald-500 transition-all duration-1000 ease-linear"
+                    strokeDasharray={`${(timeUntilUpdate / REFRESH_INTERVAL) * 100}, 100`}
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center relative z-10">
+                  <span className="text-sm font-mono font-medium text-zinc-300">
+                    {Math.ceil(timeUntilUpdate / 1000)}s
+                  </span>
+                </div>
+              </div>
+            </div>
+
             <button 
-              onClick={fetchData}
-              className="flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-xs font-medium transition-colors"
+              onClick={() => {
+                fetchData();
+                setTimeUntilUpdate(REFRESH_INTERVAL);
+              }}
+              className="flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-xs font-medium transition-colors h-10"
             >
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
               Refresh
