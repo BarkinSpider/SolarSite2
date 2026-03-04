@@ -1,0 +1,130 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+body {
+  @apply bg-[#050505] text-zinc-300 font-sans antialiased selection:bg-emerald-500/30;
+}
+
+/* Hardware / Specialist Tool vibe */
+.widget-card {
+  @apply bg-[#0a0a0a] rounded-2xl relative overflow-hidden;
+  box-shadow: 0 4px 24px -8px rgba(0,0,0,0.5);
+}
+
+.widget-card::before {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none;
+}
+
+/* Data Grid */
+.data-row {
+  @apply grid grid-cols-[2fr_1fr_1fr] gap-4 px-3 py-2 border-b border-white/[0.02] transition-colors cursor-default;
+}
+.data-row:hover {
+  @apply bg-white/[0.02];
+}
+.data-row:last-child {
+  @apply border-b-0;
+}
+
+/* Animated flow lines */
+.flow-line, .flow-line-reverse, .flow-line-vertical, .flow-line-vertical-reverse {
+  position: relative;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+.flow-line::after, .flow-line-reverse::after, .flow-line-vertical::after, .flow-line-vertical-reverse::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+}
+.flow-line::after {
+  background: linear-gradient(90deg, transparent, currentColor 50%, transparent);
+  animation: flow 1.5s linear infinite;
+}
+.flow-line-reverse::after {
+  background: linear-gradient(-90deg, transparent, currentColor 50%, transparent);
+  animation: flow-r 1.5s linear infinite;
+}
+.flow-line-vertical::after {
+  background: linear-gradient(180deg, transparent, currentColor 50%, transparent);
+  animation: flow-v 1.5s linear infinite;
+}
+.flow-line-vertical-reverse::after {
+  background: linear-gradient(0deg, transparent, currentColor 50%, transparent);
+  animation: flow-v-r 1.5s linear infinite;
+}
+
+@keyframes flow {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+@keyframes flow-r {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+@keyframes flow-v {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+@keyframes flow-v-r {
+  0% { transform: translateY(100%); }
+  100% { transform: translateY(-100%); }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-white/10 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-white/20;
+}
+
+/* Original 3D Cube */
+@keyframes rotateCube {
+  0% { transform: rotateX(0deg) rotateY(0deg); }
+  100% { transform: rotateX(360deg) rotateY(360deg); }
+}
+
+.cube-container {
+  perspective: 1000px;
+}
+
+.cube {
+  width: 52px;
+  height: 52px;
+  position: relative;
+  transform-style: preserve-3d;
+  animation: rotateCube 12s infinite linear;
+}
+
+.cube-face {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(52, 211, 153, 0.1);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  backdrop-filter: blur(2px);
+}
+
+.face-front  { transform: translateZ(26px); }
+.face-back   { transform: rotateY(180deg) translateZ(26px); }
+.face-right  { transform: rotateY(90deg) translateZ(26px); }
+.face-left   { transform: rotateY(-90deg) translateZ(26px); }
+.face-top    { transform: rotateX(90deg) translateZ(26px); }
+.face-bottom { transform: rotateX(-90deg) translateZ(26px); }

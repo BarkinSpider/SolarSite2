@@ -1,0 +1,5 @@
+{
+  "name": "Remix: EG4 Solar Monitor",
+  "description": "Real-time dashboard for EG4 solar inverter data from Prometheus",
+  "requestFramePermissions": []
+}
