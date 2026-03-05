@@ -43,7 +43,7 @@ const colors = {
 const PowerFlow = ({ 
   pvPower, pv1Power, pv2Power, pv1Voltage, pv2Voltage, 
   loadPower, pCharge, pDischarge, soc, 
-  invTemp, batTemp, cellDelta 
+  invTemp, batTemp, cellDelta, cycleCount
 }: any) => {
   const isCharging = Math.abs(pCharge) > 2;
   const isDischarging = Math.abs(pDischarge) > 2;
@@ -122,6 +122,13 @@ const PowerFlow = ({
       <div className="flex items-center justify-center w-full max-w-3xl z-10">
         {/* Battery Node */}
         <div className="flex flex-col items-center w-40 relative">
+          <div className="flex items-center gap-3 text-[10px] font-mono text-emerald-500/70 bg-emerald-500/5 px-3 py-1 rounded-full border border-emerald-500/10 mb-3">
+            <span className="flex items-center gap-1" title="Battery Temp"><Thermometer size={10} /> {batTemp.toFixed(1)}°C</span>
+            <span className="w-px h-2 bg-emerald-500/20" />
+            <span className="flex items-center gap-1" title="Cell Delta"><Zap size={10} /> Δ {cellDelta.toFixed(0)}mV</span>
+            <span className="w-px h-2 bg-emerald-500/20" />
+            <span className="flex items-center gap-1" title="Cycle Count"><RefreshCw size={10} /> {cycleCount}</span>
+          </div>
           <div className="w-20 h-20 rounded-full bg-[#050505] border border-emerald-500/30 flex items-center justify-center text-emerald-500 mb-3 shadow-[0_0_30px_rgba(16,185,129,0.15)] relative">
             <Battery size={40} />
             <div className="absolute -bottom-1 bg-[#0a0a0a] px-2.5 py-1 text-[11px] font-mono font-bold text-emerald-400 rounded-full border border-emerald-500/30 shadow-lg">
@@ -130,13 +137,8 @@ const PowerFlow = ({
           </div>
           <div className="flex flex-col items-center">
             <div className="text-emerald-500 font-mono font-semibold text-xl leading-none">{formatWatts(batteryPower)}</div>
-            <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mt-2 mb-1 font-semibold">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mt-2 font-semibold">
               {isCharging ? 'Charging' : isDischarging ? 'Discharging' : 'Idle'}
-            </div>
-            <div className="flex items-center gap-3 text-[10px] font-mono text-emerald-500/70 bg-emerald-500/5 px-3 py-1 rounded-full border border-emerald-500/10">
-              <span className="flex items-center gap-1"><Thermometer size={10} /> {batTemp.toFixed(1)}°C</span>
-              <span className="w-px h-2 bg-emerald-500/20" />
-              <span className="flex items-center gap-1"><Zap size={10} /> Δ {cellDelta.toFixed(0)}mV</span>
             </div>
           </div>
         </div>
@@ -435,6 +437,7 @@ export default function App() {
   const soc = getVal(['eg4_soc_percent', 'eg4_battery_soc', 'eg4_soc']) || 0;
   const invTemp = getVal(['eg4_tinner', 'eg4_temp_inv', 'eg4_inverter_temp']) || 0;
   const batTemp = getVal(['eg4_bmsmincelltemp', 'eg4_temp_bat', 'eg4_battery_temp']) || 0;
+  const cycleCount = getVal(['eg4_bmscyclecnt', 'eg4_battery_cycles']) || 0;
   const cellDelta = (getVal(['eg4_bmsmaxcellvolt']) && getVal(['eg4_bmsmincellvolt'])) 
     ? (getVal(['eg4_bmsmaxcellvolt'])! - getVal(['eg4_bmsmincellvolt'])!) * 1000 
     : 0;
@@ -632,12 +635,8 @@ export default function App() {
               </div>
 
               {/* Foreground Power Flow */}
-              <div className="relative z-10 p-4 bg-[#050505]/60 backdrop-blur-[2px] h-full flex flex-col">
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500 flex items-center gap-1.5">
-                    <Activity size={14} />
-                    Live Power Flow & Distribution (3H)
-                  </h2>
+              <div className="relative z-10 p-4 bg-[#050505]/20 h-full flex flex-col">
+                <div className="flex items-center justify-end mb-2">
                   <div className="flex gap-4">
                     <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-400">
                       <div className="w-2 h-2 rounded-full bg-amber-500" />
@@ -667,7 +666,14 @@ export default function App() {
                     invTemp={invTemp}
                     batTemp={batTemp}
                     cellDelta={cellDelta}
+                    cycleCount={cycleCount}
                   />
+                </div>
+                <div className="flex justify-center mt-4 pb-2">
+                  <h2 className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500/80 flex items-center gap-1.5">
+                    <Activity size={14} />
+                    Live Power Flow & Distribution (3H)
+                  </h2>
                 </div>
               </div>
             </motion.div>
