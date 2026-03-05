@@ -41,10 +41,12 @@ const colors = {
 };
 
 const PowerFlow = ({ pvPower, pv1Power, pv2Power, loadPower, pCharge, pDischarge, soc }: any) => {
-  const isCharging = pCharge > 10;
-  const isDischarging = pDischarge > 10;
+  const isCharging = Math.abs(pCharge) > 2;
+  const isDischarging = Math.abs(pDischarge) > 2;
   const batteryPower = isCharging ? pCharge : isDischarging ? pDischarge : 0;
-  const isActive = pvPower > 10 || loadPower > 10 || batteryPower > 10;
+  const isLoadActive = Math.abs(loadPower) > 2;
+  const isPVActive = Math.abs(pvPower) > 2;
+  const isActive = isPVActive || isLoadActive || isCharging || isDischarging;
   
   const formatWatts = (w: number) => {
     if (w >= 1000) return `${(w / 1000).toFixed(2)} kW`;
@@ -52,64 +54,67 @@ const PowerFlow = ({ pvPower, pv1Power, pv2Power, loadPower, pCharge, pDischarge
   };
 
   return (
-    <div className="flex flex-col items-center justify-center py-2 relative">
+    <div className="flex flex-col items-center justify-center py-2 relative w-full">
       {/* Solar Row */}
       <div className="flex items-center justify-center w-full max-w-xl z-10 mb-12 mt-4">
         {/* PV 1 Node */}
         <div className="flex flex-col items-center relative w-12">
-          <div className="absolute -top-6 text-amber-500/80 font-mono font-medium text-sm whitespace-nowrap">{formatWatts(pv1Power)}</div>
-          <div className="w-12 h-12 rounded-full bg-[#050505] flex items-center justify-center z-10">
-            <div className="w-full h-full rounded-full bg-amber-500/5 flex items-center justify-center text-amber-500/70 border border-amber-500/20">
-              <Sun size={20} />
-            </div>
+          <div className="absolute -top-6 text-amber-500/80 font-mono font-medium text-xs whitespace-nowrap">{formatWatts(pv1Power)}</div>
+          <div className="w-10 h-10 rounded-full bg-[#050505] flex items-center justify-center z-10 border border-amber-500/20">
+            <Sun size={18} className="text-amber-500/70" />
           </div>
-          <div className="absolute -bottom-5 text-[9px] uppercase tracking-widest text-zinc-500 whitespace-nowrap">PV 1</div>
+          <div className="absolute -bottom-5 text-[8px] uppercase tracking-widest text-zinc-500 whitespace-nowrap">PV 1</div>
         </div>
 
         {/* Line PV1 -> Total */}
         <div className="flex-1 flex items-center justify-center px-2">
-           <div className={cn("h-0.5 w-full transition-colors duration-500", pv1Power > 0 ? "flow-line text-amber-500" : "bg-zinc-800")} />
+           <div className={cn(
+             "h-1.5 w-full rounded-full relative transition-colors duration-500",
+             Math.abs(pv1Power) > 2 ? "flow-line text-amber-500 bg-amber-500/10" : "bg-zinc-800/50"
+           )} />
         </div>
 
         {/* Total Solar Node */}
         <div className="flex flex-col items-center relative w-16">
-          <div className="absolute -top-10 text-[16px] uppercase tracking-widest font-semibold text-zinc-500 whitespace-nowrap">Live Power Flow</div>
-          <div className="w-16 h-16 rounded-full bg-[#050505] flex items-center justify-center z-10">
-            <div className="w-full h-full rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.15)]">
-              <Sun size={32} />
-            </div>
+          <div className="absolute -top-10 text-[14px] uppercase tracking-widest font-semibold text-zinc-500 whitespace-nowrap">Live Power Flow</div>
+          <div className="w-16 h-16 rounded-full bg-[#050505] flex items-center justify-center z-10 border border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.1)]">
+            <Sun size={32} className="text-amber-500" />
           </div>
           <div className="absolute -bottom-7 text-amber-500 font-mono font-medium text-lg whitespace-nowrap">{formatWatts(pvPower)}</div>
-          <div className="absolute -bottom-11 text-[10px] uppercase tracking-widest text-zinc-500 whitespace-nowrap">Total Solar</div>
+          <div className="absolute -bottom-11 text-[9px] uppercase tracking-widest text-zinc-500 whitespace-nowrap">Total Solar</div>
         </div>
 
         {/* Line PV2 -> Total */}
         <div className="flex-1 flex items-center justify-center px-2">
-           <div className={cn("h-0.5 w-full transition-colors duration-500", pv2Power > 0 ? "flow-line-reverse text-amber-500" : "bg-zinc-800")} />
+           <div className={cn(
+             "h-1.5 w-full rounded-full relative transition-colors duration-500",
+             Math.abs(pv2Power) > 2 ? "flow-line-reverse text-amber-500 bg-amber-500/10" : "bg-zinc-800/50"
+           )} />
         </div>
 
         {/* PV 2 Node */}
         <div className="flex flex-col items-center relative w-12">
-          <div className="absolute -top-6 text-amber-500/80 font-mono font-medium text-sm whitespace-nowrap">{formatWatts(pv2Power)}</div>
-          <div className="w-12 h-12 rounded-full bg-[#050505] flex items-center justify-center z-10">
-            <div className="w-full h-full rounded-full bg-amber-500/5 flex items-center justify-center text-amber-500/70 border border-amber-500/20">
-              <Sun size={20} />
-            </div>
+          <div className="absolute -top-6 text-amber-500/80 font-mono font-medium text-xs whitespace-nowrap">{formatWatts(pv2Power)}</div>
+          <div className="w-10 h-10 rounded-full bg-[#050505] flex items-center justify-center z-10 border border-amber-500/20">
+            <Sun size={18} className="text-amber-500/70" />
           </div>
-          <div className="absolute -bottom-5 text-[9px] uppercase tracking-widest text-zinc-500 whitespace-nowrap">PV 2</div>
+          <div className="absolute -bottom-5 text-[8px] uppercase tracking-widest text-zinc-500 whitespace-nowrap">PV 2</div>
         </div>
       </div>
 
       {/* Vertical Line to Inverter */}
-      <div className={cn("w-0.5 h-12 transition-colors duration-500", pvPower > 10 ? "flow-line-vertical text-amber-500" : "text-zinc-800 bg-zinc-800")} />
+      <div className={cn(
+        "w-1.5 h-12 rounded-full relative transition-colors duration-500",
+        isPVActive ? "flow-line-vertical text-amber-500 bg-amber-500/10" : "bg-zinc-800/50"
+      )} />
 
       {/* Middle Row: Battery - Inverter - Load */}
       <div className="flex items-center justify-center w-full max-w-3xl z-10">
         {/* Battery Node */}
         <div className="flex flex-col items-center w-36">
-          <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-2 shadow-[0_0_30px_rgba(16,185,129,0.15)] relative">
+          <div className="w-16 h-16 rounded-full bg-[#050505] border border-emerald-500/30 flex items-center justify-center text-emerald-500 mb-2 shadow-[0_0_20px_rgba(16,185,129,0.1)] relative">
             <Battery size={32} />
-            <div className="absolute -bottom-2 bg-[#0a0a0a] px-2 py-0.5 text-[10px] font-mono text-emerald-500 rounded-full">
+            <div className="absolute -bottom-2 bg-[#0a0a0a] px-2 py-0.5 text-[10px] font-mono text-emerald-500 rounded-full border border-emerald-500/20">
               {soc.toFixed(1)}%
             </div>
           </div>
@@ -122,25 +127,24 @@ const PowerFlow = ({ pvPower, pv1Power, pv2Power, loadPower, pCharge, pDischarge
         {/* Horizontal Line Inverter <-> Battery */}
         <div className="flex-1 flex items-center justify-center px-1">
            <div className={cn(
-             "h-0.5 w-full transition-colors duration-500", 
-             isCharging ? "flow-line-reverse text-emerald-500" : 
-             isDischarging ? "flow-line text-emerald-500" : "text-zinc-800 bg-zinc-800"
+             "h-1.5 w-full rounded-full relative transition-colors duration-500",
+             isCharging ? "flow-line-reverse text-emerald-500 bg-emerald-500/10" : 
+             isDischarging ? "flow-line text-emerald-500 bg-emerald-500/10" : "bg-zinc-800/50"
            )} />
         </div>
 
         {/* Inverter Node */}
         <div className="flex flex-col items-center w-48">
-          <div className="w-[120px] h-[120px] rounded-2xl bg-[#050505] border border-zinc-800/50 flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.8)] relative z-20 overflow-hidden">
+          <div className="w-[120px] h-[120px] rounded-2xl bg-[#050505] border border-zinc-800/50 flex items-center justify-center shadow-[0_0_40px_rgba(0,0,0,0.9)] relative z-20 overflow-hidden">
             <svg width="112" height="112" viewBox="0 0 100 100" className="absolute inset-auto">
               {/* Outer dashed ring */}
-              <g className={cn("origin-center transition-all duration-500", isActive ? "animate-[spin_12s_linear_infinite]" : "")}>
+              <g className={cn("origin-center transition-all duration-500", isActive ? "animate-slow-spin" : "")}>
                 <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="4 8" className="text-zinc-700" />
                 <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="6" strokeDasharray="10 10" className="text-zinc-800" />
               </g>
               {/* Inner rotating elements */}
-              <g className={cn("origin-center transition-all duration-500", isActive ? "animate-[spin_8s_linear_infinite_reverse]" : "")}>
+              <g className={cn("origin-center transition-all duration-500", isActive ? "animate-slow-spin-reverse" : "")}>
                 <circle cx="50" cy="50" r="28" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="6 6" className="text-zinc-600" />
-                {/* 4 small arrows/triangles pointing inward */}
                 <polygon points="50,14 54,22 46,22" fill="currentColor" className={isActive ? "text-emerald-500/40" : "text-zinc-700"} />
                 <polygon points="50,86 46,78 54,78" fill="currentColor" className={isActive ? "text-emerald-500/40" : "text-zinc-700"} />
                 <polygon points="14,50 22,46 22,54" fill="currentColor" className={isActive ? "text-emerald-500/40" : "text-zinc-700"} />
@@ -162,12 +166,15 @@ const PowerFlow = ({ pvPower, pv1Power, pv2Power, loadPower, pCharge, pDischarge
 
         {/* Horizontal Line Inverter -> Load */}
         <div className="flex-1 flex items-center justify-center px-1">
-           <div className={cn("h-0.5 w-full transition-colors duration-500", loadPower > 10 ? "flow-line text-cyan-500" : "text-zinc-800 bg-zinc-800")} />
+           <div className={cn(
+             "h-1.5 w-full rounded-full relative transition-colors duration-500",
+             isLoadActive ? "flow-line text-cyan-500 bg-cyan-500/10" : "bg-zinc-800/50"
+           )} />
         </div>
 
         {/* Load Node */}
         <div className="flex flex-col items-center w-36">
-          <div className="w-16 h-16 rounded-full bg-cyan-500/10 flex items-center justify-center text-cyan-500 mb-2 shadow-[0_0_30px_rgba(6,182,212,0.15)]">
+          <div className="w-16 h-16 rounded-full bg-[#050505] border border-cyan-500/30 flex items-center justify-center text-cyan-500 mb-2 shadow-[0_0_20px_rgba(6,182,212,0.1)]">
             <Home size={32} />
           </div>
           <div className="text-cyan-500 font-mono font-medium text-lg">{formatWatts(loadPower)}</div>
@@ -384,12 +391,22 @@ export default function App() {
     return found ? currentValues[found] : undefined;
   };
 
-  const pCharge = currentValues['eg4_pcharge'] || 0;
-  const pDischarge = currentValues['eg4_pdischarge'] || 0;
-  const pv1Power = currentValues['eg4_ppv1'] || 0;
-  const pv2Power = currentValues['eg4_ppv2'] || 0;
-  const pvPower = pv1Power + pv2Power || getVal(['eg4_pv_power_watts', 'eg4_pv_watts', 'eg4_solar_power']) || 0;
-  const loadPower = getVal(['eg4_seps', 'eg4_load_power_watts', 'eg4_load_watts']) || 0;
+  const pChargeRaw = getVal(['eg4_pcharge', 'eg4_battery_charge_power']) || 0;
+  const pDischargeRaw = getVal(['eg4_pdischarge', 'eg4_battery_discharge_power']) || 0;
+  const pBatterySigned = getVal(['eg4_battery_power', 'eg4_p_battery', 'eg4_battery_watts', 'eg4_p_bat']);
+  
+  let pCharge = pChargeRaw;
+  let pDischarge = pDischargeRaw;
+  
+  if (pBatterySigned !== undefined && pCharge === 0 && pDischarge === 0) {
+    if (pBatterySigned > 0) pCharge = pBatterySigned;
+    else if (pBatterySigned < 0) pDischarge = Math.abs(pBatterySigned);
+  }
+
+  const pv1Power = currentValues['eg4_ppv1'] || getVal(['eg4_pv1_power', 'eg4_ppv1']) || 0;
+  const pv2Power = currentValues['eg4_ppv2'] || getVal(['eg4_pv2_power', 'eg4_ppv2']) || 0;
+  const pvPower = pv1Power + pv2Power || getVal(['eg4_pv_power_watts', 'eg4_pv_watts', 'eg4_solar_power', 'eg4_ppv']) || 0;
+  const loadPower = getVal(['eg4_seps', 'eg4_load_power_watts', 'eg4_load_watts', 'eg4_house_load', 'eg4_p_load']) || 0;
   const soc = getVal(['eg4_soc_percent', 'eg4_battery_soc', 'eg4_soc']) || 0;
   const todayEnergy = (currentValues['eg4_epv1day'] || 0) + (currentValues['eg4_epv2day'] || 0);
 
@@ -516,47 +533,17 @@ export default function App() {
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Left Column: Power Flow (Spans 2 cols on lg) */}
+          {/* Left Column: Power Flow & Distribution (Spans 2 cols on lg) */}
           <div className="lg:col-span-2 space-y-4">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="widget-card p-4"
+              className="widget-card relative overflow-hidden min-h-[400px]"
             >
-              <PowerFlow pvPower={pvPower} pv1Power={pv1Power} pv2Power={pv2Power} loadPower={loadPower} pCharge={pCharge} pDischarge={pDischarge} soc={soc} />
-            </motion.div>
-
-            {/* Area Chart */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="widget-card p-4"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500 flex items-center gap-1.5">
-                  <Activity size={14} />
-                  Power Distribution (3H)
-                </h2>
-                <div className="flex gap-4">
-                  <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-400">
-                    <div className="w-2 h-2 rounded-full bg-amber-500" />
-                    <span>PV</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-400">
-                    <div className="w-2 h-2 rounded-full bg-cyan-500" />
-                    <span>Load</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-400">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span>Batt</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="h-[240px] w-full">
+              {/* Background Area Chart */}
+              <div className="absolute inset-0 z-0 opacity-50">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={historyData}>
+                  <AreaChart data={historyData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorPv" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={colors.amber} stopOpacity={0.3}/>
@@ -583,11 +570,6 @@ export default function App() {
                       tickLine={false}
                       axisLine={false}
                       tickFormatter={(v) => `${v}W`}
-                    />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '12px' }}
-                      labelFormatter={formatTime}
-                      itemStyle={{ fontWeight: '500' }}
                     />
                     <Area 
                       type="stepAfter" 
@@ -617,6 +599,33 @@ export default function App() {
                     />
                   </AreaChart>
                 </ResponsiveContainer>
+              </div>
+
+              {/* Foreground Power Flow */}
+              <div className="relative z-10 p-4 bg-[#050505]/60 backdrop-blur-[2px] h-full flex flex-col">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500 flex items-center gap-1.5">
+                    <Activity size={14} />
+                    Live Power Flow & Distribution (3H)
+                  </h2>
+                  <div className="flex gap-4">
+                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-400">
+                      <div className="w-2 h-2 rounded-full bg-amber-500" />
+                      <span>PV</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-400">
+                      <div className="w-2 h-2 rounded-full bg-cyan-500" />
+                      <span>Load</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-400">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span>Batt</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex-1 flex items-center justify-center">
+                  <PowerFlow pvPower={pvPower} pv1Power={pv1Power} pv2Power={pv2Power} loadPower={loadPower} pCharge={pCharge} pDischarge={pDischarge} soc={soc} />
+                </div>
               </div>
             </motion.div>
           </div>
