@@ -40,7 +40,11 @@ const colors = {
   zinc: '#a1a1aa'
 };
 
-const PowerFlow = ({ pvPower, pv1Power, pv2Power, loadPower, pCharge, pDischarge, soc }: any) => {
+const PowerFlow = ({ 
+  pvPower, pv1Power, pv2Power, pv1Voltage, pv2Voltage, 
+  loadPower, pCharge, pDischarge, soc, 
+  invTemp, batTemp, cellDelta 
+}: any) => {
   const isCharging = Math.abs(pCharge) > 2;
   const isDischarging = Math.abs(pDischarge) > 2;
   const batteryPower = isCharging ? pCharge : isDischarging ? pDischarge : 0;
@@ -59,7 +63,10 @@ const PowerFlow = ({ pvPower, pv1Power, pv2Power, loadPower, pCharge, pDischarge
       <div className="flex items-center justify-center w-full max-w-xl z-10 mb-12 mt-4">
         {/* PV 1 Node */}
         <div className="flex flex-col items-center relative w-12">
-          <div className="absolute -top-6 text-amber-500/80 font-mono font-medium text-xs whitespace-nowrap">{formatWatts(pv1Power)}</div>
+          <div className="absolute -top-10 flex flex-col items-center">
+            <span className="text-amber-500/80 font-mono font-medium text-xs whitespace-nowrap">{formatWatts(pv1Power)}</span>
+            <span className="text-amber-500/50 font-mono text-[9px] whitespace-nowrap">{pv1Voltage.toFixed(1)}V</span>
+          </div>
           <div className="w-10 h-10 rounded-full bg-[#050505] flex items-center justify-center z-10 border border-amber-500/20">
             <Sun size={18} className="text-amber-500/70" />
           </div>
@@ -94,7 +101,10 @@ const PowerFlow = ({ pvPower, pv1Power, pv2Power, loadPower, pCharge, pDischarge
 
         {/* PV 2 Node */}
         <div className="flex flex-col items-center relative w-12">
-          <div className="absolute -top-6 text-amber-500/80 font-mono font-medium text-xs whitespace-nowrap">{formatWatts(pv2Power)}</div>
+          <div className="absolute -top-10 flex flex-col items-center">
+            <span className="text-amber-500/80 font-mono font-medium text-xs whitespace-nowrap">{formatWatts(pv2Power)}</span>
+            <span className="text-amber-500/50 font-mono text-[9px] whitespace-nowrap">{pv2Voltage.toFixed(1)}V</span>
+          </div>
           <div className="w-10 h-10 rounded-full bg-[#050505] flex items-center justify-center z-10 border border-amber-500/20">
             <Sun size={18} className="text-amber-500/70" />
           </div>
@@ -111,16 +121,23 @@ const PowerFlow = ({ pvPower, pv1Power, pv2Power, loadPower, pCharge, pDischarge
       {/* Middle Row: Battery - Inverter - Load */}
       <div className="flex items-center justify-center w-full max-w-3xl z-10">
         {/* Battery Node */}
-        <div className="flex flex-col items-center w-36">
-          <div className="w-16 h-16 rounded-full bg-[#050505] border border-emerald-500/30 flex items-center justify-center text-emerald-500 mb-2 shadow-[0_0_20px_rgba(16,185,129,0.1)] relative">
-            <Battery size={32} />
-            <div className="absolute -bottom-2 bg-[#0a0a0a] px-2 py-0.5 text-[10px] font-mono text-emerald-500 rounded-full border border-emerald-500/20">
+        <div className="flex flex-col items-center w-40 relative">
+          <div className="w-20 h-20 rounded-full bg-[#050505] border border-emerald-500/30 flex items-center justify-center text-emerald-500 mb-3 shadow-[0_0_30px_rgba(16,185,129,0.15)] relative">
+            <Battery size={40} />
+            <div className="absolute -bottom-1 bg-[#0a0a0a] px-2.5 py-1 text-[11px] font-mono font-bold text-emerald-400 rounded-full border border-emerald-500/30 shadow-lg">
               {soc.toFixed(1)}%
             </div>
           </div>
-          <div className="text-emerald-500 font-mono font-medium text-lg mt-2">{formatWatts(batteryPower)}</div>
-          <div className="text-[10px] uppercase tracking-widest text-zinc-500 mt-1">
-            {isCharging ? 'Charging' : isDischarging ? 'Discharging' : 'Idle'}
+          <div className="flex flex-col items-center">
+            <div className="text-emerald-500 font-mono font-semibold text-xl leading-none">{formatWatts(batteryPower)}</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mt-2 mb-1 font-semibold">
+              {isCharging ? 'Charging' : isDischarging ? 'Discharging' : 'Idle'}
+            </div>
+            <div className="flex items-center gap-3 text-[10px] font-mono text-emerald-500/70 bg-emerald-500/5 px-3 py-1 rounded-full border border-emerald-500/10">
+              <span className="flex items-center gap-1"><Thermometer size={10} /> {batTemp.toFixed(1)}°C</span>
+              <span className="w-px h-2 bg-emerald-500/20" />
+              <span className="flex items-center gap-1"><Zap size={10} /> Δ {cellDelta.toFixed(0)}mV</span>
+            </div>
           </div>
         </div>
 
@@ -134,7 +151,7 @@ const PowerFlow = ({ pvPower, pv1Power, pv2Power, loadPower, pCharge, pDischarge
         </div>
 
         {/* Inverter Node */}
-        <div className="flex flex-col items-center w-48">
+        <div className="flex flex-col items-center w-48 relative">
           <div className="w-[120px] h-[120px] rounded-2xl bg-[#050505] border border-zinc-800/50 flex items-center justify-center shadow-[0_0_40px_rgba(0,0,0,0.9)] relative z-20 overflow-hidden">
             <svg width="112" height="112" viewBox="0 0 100 100" className="absolute inset-auto">
               {/* Outer dashed ring */}
@@ -161,7 +178,13 @@ const PowerFlow = ({ pvPower, pv1Power, pv2Power, loadPower, pCharge, pDischarge
               />
             </svg>
           </div>
-          <div className="text-[10px] uppercase tracking-widest text-zinc-500 mt-3 text-center">EG4 6000XP Inverter</div>
+          <div className="flex flex-col items-center gap-1.5 mt-4">
+            <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-400 text-center">EG4 6000XP Inverter</div>
+            <div className="flex items-center gap-1.5 bg-rose-500/5 px-3 py-1 rounded-full border border-rose-500/10 text-[10px] font-mono text-rose-500/80">
+              <Thermometer size={12} />
+              <span>{invTemp.toFixed(1)}°C</span>
+            </div>
+          </div>
         </div>
 
         {/* Horizontal Line Inverter -> Load */}
@@ -173,12 +196,12 @@ const PowerFlow = ({ pvPower, pv1Power, pv2Power, loadPower, pCharge, pDischarge
         </div>
 
         {/* Load Node */}
-        <div className="flex flex-col items-center w-36">
-          <div className="w-16 h-16 rounded-full bg-[#050505] border border-cyan-500/30 flex items-center justify-center text-cyan-500 mb-2 shadow-[0_0_20px_rgba(6,182,212,0.1)]">
-            <Home size={32} />
+        <div className="flex flex-col items-center w-40">
+          <div className="w-20 h-20 rounded-full bg-[#050505] border border-cyan-500/30 flex items-center justify-center text-cyan-500 mb-3 shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+            <Home size={40} />
           </div>
-          <div className="text-cyan-500 font-mono font-medium text-lg">{formatWatts(loadPower)}</div>
-          <div className="text-[10px] uppercase tracking-widest text-zinc-500 mt-1">Home Load</div>
+          <div className="text-cyan-500 font-mono font-semibold text-xl leading-none">{formatWatts(loadPower)}</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mt-2 font-semibold">Home Load</div>
         </div>
       </div>
     </div>
@@ -405,9 +428,16 @@ export default function App() {
 
   const pv1Power = currentValues['eg4_ppv1'] || getVal(['eg4_pv1_power', 'eg4_ppv1']) || 0;
   const pv2Power = currentValues['eg4_ppv2'] || getVal(['eg4_pv2_power', 'eg4_ppv2']) || 0;
+  const pv1Voltage = getVal(['eg4_vpv1', 'eg4_pv1_voltage']) || 0;
+  const pv2Voltage = getVal(['eg4_vpv2', 'eg4_pv2_voltage']) || 0;
   const pvPower = pv1Power + pv2Power || getVal(['eg4_pv_power_watts', 'eg4_pv_watts', 'eg4_solar_power', 'eg4_ppv']) || 0;
   const loadPower = getVal(['eg4_seps', 'eg4_load_power_watts', 'eg4_load_watts', 'eg4_house_load', 'eg4_p_load']) || 0;
   const soc = getVal(['eg4_soc_percent', 'eg4_battery_soc', 'eg4_soc']) || 0;
+  const invTemp = getVal(['eg4_tinner', 'eg4_temp_inv', 'eg4_inverter_temp']) || 0;
+  const batTemp = getVal(['eg4_bmsmincelltemp', 'eg4_temp_bat', 'eg4_battery_temp']) || 0;
+  const cellDelta = (getVal(['eg4_bmsmaxcellvolt']) && getVal(['eg4_bmsmincellvolt'])) 
+    ? (getVal(['eg4_bmsmaxcellvolt'])! - getVal(['eg4_bmsmincellvolt'])!) * 1000 
+    : 0;
   const todayEnergy = (currentValues['eg4_epv1day'] || 0) + (currentValues['eg4_epv2day'] || 0);
 
   return (
@@ -624,7 +654,20 @@ export default function App() {
                   </div>
                 </div>
                 <div className="flex-1 flex items-center justify-center">
-                  <PowerFlow pvPower={pvPower} pv1Power={pv1Power} pv2Power={pv2Power} loadPower={loadPower} pCharge={pCharge} pDischarge={pDischarge} soc={soc} />
+                  <PowerFlow 
+                    pvPower={pvPower} 
+                    pv1Power={pv1Power} 
+                    pv2Power={pv2Power} 
+                    pv1Voltage={pv1Voltage}
+                    pv2Voltage={pv2Voltage}
+                    loadPower={loadPower} 
+                    pCharge={pCharge} 
+                    pDischarge={pDischarge} 
+                    soc={soc} 
+                    invTemp={invTemp}
+                    batTemp={batTemp}
+                    cellDelta={cellDelta}
+                  />
                 </div>
               </div>
             </motion.div>
