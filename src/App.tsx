@@ -6,7 +6,8 @@ import {
 import { 
   Sun, Battery, Zap, Activity, AlertCircle, RefreshCw, 
   Gauge, Clock, Thermometer, Home, Moon, Cloud, CloudSun, 
-  CloudMoon, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudDrizzle
+  CloudMoon, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudDrizzle,
+  LayoutGrid, Settings
 } from 'lucide-react';
 import axios from 'axios';
 import { clsx, type ClassValue } from 'clsx';
@@ -40,10 +41,99 @@ const colors = {
   zinc: '#a1a1aa'
 };
 
+const AnimatedSolarPanel = ({ isActive, color }: { isActive: boolean, color: string }) => (
+  <div className="relative w-20 h-20 flex items-center justify-center">
+    <motion.div
+      animate={isActive ? {
+        boxShadow: [
+          `0 0 0px ${color}20`,
+          `0 0 20px ${color}40`,
+          `0 0 0px ${color}20`
+        ]
+      } : {}}
+      transition={{ duration: 2, repeat: Infinity }}
+      className={cn(
+        "w-16 h-16 rounded-xl bg-[#050505] border flex items-center justify-center relative overflow-hidden",
+        isActive ? `border-${color}/40` : "border-zinc-800/50"
+      )}
+      style={{ borderColor: isActive ? color : undefined }}
+    >
+      {/* Solar Panel Grid Pattern */}
+      <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-px p-1 opacity-20">
+        {[...Array(9)].map((_, i) => (
+          <div key={i} className="bg-zinc-400/50 rounded-[1px]" />
+        ))}
+      </div>
+      
+      <Sun size={28} className={cn("relative z-10 transition-colors duration-500", isActive ? "text-amber-500" : "text-zinc-600")} />
+      
+      {/* Shine Animation */}
+      {isActive && (
+        <motion.div
+          animate={{ x: ['-100%', '200%'] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12"
+        />
+      )}
+    </motion.div>
+  </div>
+);
+
+const SolarPowerNode = ({ isActive, color, power }: { isActive: boolean, color: string, power: number }) => (
+  <div className="flex flex-col items-center relative w-24">
+    <div className="absolute -top-8 text-[10px] uppercase tracking-[0.2em] text-zinc-500 whitespace-nowrap font-bold">Solar Power</div>
+    <motion.div 
+      animate={isActive ? { 
+        borderColor: [color, `${color}40`, color],
+        boxShadow: [`0 0 10px ${color}20`, `0 0 20px ${color}40`, `0 0 10px ${color}20`]
+      } : {}}
+      transition={{ duration: 2, repeat: Infinity }}
+      className="w-16 h-16 rounded-xl bg-[#050505] border border-zinc-800 flex flex-col items-center justify-center z-10 relative overflow-hidden"
+    >
+      {/* Internal circuitry pattern */}
+      <div className="absolute inset-0 opacity-10 pointer-events-none">
+        <div className="absolute top-2 left-2 w-2 h-2 rounded-full bg-white" />
+        <div className="absolute bottom-2 right-2 w-2 h-2 rounded-full bg-white" />
+        <div className="absolute top-1/2 left-0 w-full h-px bg-white" />
+        <div className="absolute top-0 left-1/2 w-px h-full bg-white" />
+      </div>
+
+      {/* Animated LEDs */}
+      <div className="flex gap-1 mb-1">
+        {[...Array(3)].map((_, i) => (
+          <motion.div
+            key={i}
+            animate={isActive ? { opacity: [0.3, 1, 0.3] } : { opacity: 0.2 }}
+            transition={{ duration: 1, repeat: Infinity, delay: i * 0.3 }}
+            className={cn("w-1.5 h-1.5 rounded-full", isActive ? "bg-amber-500" : "bg-zinc-700")}
+          />
+        ))}
+      </div>
+
+      <Zap size={24} className={cn("transition-colors duration-500", isActive ? "text-amber-500" : "text-zinc-700")} />
+      
+      {/* Data flow lines */}
+      {isActive && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <motion.div 
+            animate={{ rotate: 360 }}
+            transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+            className="w-12 h-12 border border-dashed border-amber-500/20 rounded-full"
+          />
+        </div>
+      )}
+    </motion.div>
+    <div className="absolute -bottom-8 text-amber-500 font-mono font-medium text-lg whitespace-nowrap">
+      {power >= 1000 ? `${(power / 1000).toFixed(2)} kW` : `${power.toFixed(0)} W`}
+    </div>
+  </div>
+);
+
 const PowerFlow = ({ 
   pvPower, pv1Power, pv2Power, pv1Voltage, pv2Voltage, 
   loadPower, pCharge, pDischarge, soc, 
-  invTemp, batTemp, cellDelta, cycleCount
+  invTemp, batTemp, cellDelta, cycleCount,
+  vBat, fEps
 }: any) => {
   const isCharging = Math.abs(pCharge) > 2;
   const isDischarging = Math.abs(pDischarge) > 2;
@@ -58,98 +148,102 @@ const PowerFlow = ({
   };
 
   return (
-    <div className="flex flex-col items-center justify-center py-2 relative w-full">
+    <div className="flex flex-col items-center justify-center py-2 relative w-full h-full">
       {/* Solar Row */}
-      <div className="flex items-center justify-center w-full max-w-xl z-10 mb-12 mt-4">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center w-full max-w-4xl z-10 mb-12 mt-8">
         {/* PV 1 Node */}
-        <div className="flex flex-col items-center relative w-12">
-          <div className="absolute -top-10 flex flex-col items-center">
-            <span className="text-amber-500/80 font-mono font-medium text-xs whitespace-nowrap">{formatWatts(pv1Power)}</span>
-            <span className="text-amber-500/50 font-mono text-[9px] whitespace-nowrap">{pv1Voltage.toFixed(1)}V</span>
+        <div className="flex items-center justify-end">
+          <div className="flex flex-col items-center relative mr-8">
+            <div className="absolute -top-8 text-[10px] uppercase tracking-widest text-zinc-500 whitespace-nowrap font-bold">PV 1</div>
+            <AnimatedSolarPanel isActive={Math.abs(pv1Power) > 2} color={colors.amber} />
+            <div className="absolute -bottom-10 flex flex-col items-center">
+              <span className="text-amber-500 font-mono font-medium text-sm whitespace-nowrap">{formatWatts(pv1Power)}</span>
+              <span className="text-amber-500/50 font-mono text-[10px] whitespace-nowrap">{pv1Voltage.toFixed(1)}V</span>
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-full bg-[#050505] flex items-center justify-center z-10 border border-amber-500/20">
-            <Sun size={18} className="text-amber-500/70" />
-          </div>
-          <div className="absolute -bottom-5 text-[8px] uppercase tracking-widest text-zinc-500 whitespace-nowrap">PV 1</div>
-        </div>
-
-        {/* Line PV1 -> Total */}
-        <div className="flex-1 flex items-center justify-center px-2">
-           <div className={cn(
-             "h-1.5 w-full rounded-full relative transition-colors duration-500",
-             Math.abs(pv1Power) > 2 ? "flow-line text-amber-500 bg-amber-500/10" : "bg-zinc-800/50"
-           )} />
+          <div className={cn(
+            "h-1.5 w-16 md:w-24 rounded-full relative transition-colors duration-500",
+            Math.abs(pv1Power) > 2 ? "flow-line text-amber-500 bg-amber-500/10" : "bg-zinc-800/50"
+          )} />
         </div>
 
         {/* Total Solar Node */}
-        <div className="flex flex-col items-center relative w-16">
-          <div className="absolute -top-10 text-[14px] uppercase tracking-widest font-semibold text-zinc-500 whitespace-nowrap">Live Power Flow</div>
-          <div className="w-16 h-16 rounded-full bg-[#050505] flex items-center justify-center z-10 border border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.1)]">
-            <Sun size={32} className="text-amber-500" />
-          </div>
-          <div className="absolute -bottom-7 text-amber-500 font-mono font-medium text-lg whitespace-nowrap">{formatWatts(pvPower)}</div>
-          <div className="absolute -bottom-11 text-[9px] uppercase tracking-widest text-zinc-500 whitespace-nowrap">Total Solar</div>
-        </div>
-
-        {/* Line PV2 -> Total */}
-        <div className="flex-1 flex items-center justify-center px-2">
-           <div className={cn(
-             "h-1.5 w-full rounded-full relative transition-colors duration-500",
-             Math.abs(pv2Power) > 2 ? "flow-line-reverse text-amber-500 bg-amber-500/10" : "bg-zinc-800/50"
-           )} />
-        </div>
+        <SolarPowerNode isActive={isPVActive} color={colors.amber} power={pvPower} />
 
         {/* PV 2 Node */}
-        <div className="flex flex-col items-center relative w-12">
-          <div className="absolute -top-10 flex flex-col items-center">
-            <span className="text-amber-500/80 font-mono font-medium text-xs whitespace-nowrap">{formatWatts(pv2Power)}</span>
-            <span className="text-amber-500/50 font-mono text-[9px] whitespace-nowrap">{pv2Voltage.toFixed(1)}V</span>
+        <div className="flex items-center justify-start">
+          <div className={cn(
+            "h-1.5 w-16 md:w-24 rounded-full relative transition-colors duration-500",
+            Math.abs(pv2Power) > 2 ? "flow-line-reverse text-amber-500 bg-amber-500/10" : "bg-zinc-800/50"
+          )} />
+          <div className="flex flex-col items-center relative ml-8">
+            <div className="absolute -top-8 text-[10px] uppercase tracking-widest text-zinc-500 whitespace-nowrap font-bold">PV 2</div>
+            <AnimatedSolarPanel isActive={Math.abs(pv2Power) > 2} color={colors.amber} />
+            <div className="absolute -bottom-10 flex flex-col items-center">
+              <span className="text-amber-500 font-mono font-medium text-sm whitespace-nowrap">{formatWatts(pv2Power)}</span>
+              <span className="text-amber-500/50 font-mono text-[10px] whitespace-nowrap">{pv2Voltage.toFixed(1)}V</span>
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-full bg-[#050505] flex items-center justify-center z-10 border border-amber-500/20">
-            <Sun size={18} className="text-amber-500/70" />
-          </div>
-          <div className="absolute -bottom-5 text-[8px] uppercase tracking-widest text-zinc-500 whitespace-nowrap">PV 2</div>
         </div>
       </div>
 
       {/* Vertical Line to Inverter */}
-      <div className={cn(
-        "w-1.5 h-12 rounded-full relative transition-colors duration-500",
-        isPVActive ? "flow-line-vertical text-amber-500 bg-amber-500/10" : "bg-zinc-800/50"
-      )} />
+      <div className="flex flex-col items-center h-24 -mt-4 mb-4 relative z-0">
+        <div className={cn(
+          "w-2 h-full rounded-full relative transition-colors duration-500",
+          isPVActive ? "flow-line-vertical text-amber-500 bg-amber-500/10" : "bg-zinc-800/50"
+        )} />
+      </div>
 
       {/* Middle Row: Battery - Inverter - Load */}
-      <div className="flex items-center justify-center w-full max-w-3xl z-10">
-        {/* Battery Node */}
-        <div className="flex flex-col items-center w-40 relative">
-          <div className="flex items-center gap-3 text-[10px] font-mono text-emerald-500/70 bg-emerald-500/5 px-3 py-1 rounded-full border border-emerald-500/10 mb-3">
-            <span className="flex items-center gap-1" title="Battery Temp"><Thermometer size={10} /> {batTemp.toFixed(1)}°C</span>
-            <span className="w-px h-2 bg-emerald-500/20" />
-            <span className="flex items-center gap-1" title="Cell Delta"><Zap size={10} /> Δ {cellDelta.toFixed(0)}mV</span>
-            <span className="w-px h-2 bg-emerald-500/20" />
-            <span className="flex items-center gap-1" title="Cycle Count"><RefreshCw size={10} /> {cycleCount}</span>
-          </div>
-          <div className="w-20 h-20 rounded-full bg-[#050505] border border-emerald-500/30 flex items-center justify-center text-emerald-500 mb-3 shadow-[0_0_30px_rgba(16,185,129,0.15)] relative">
-            <Battery size={40} />
-            <div className="absolute -bottom-1 bg-[#0a0a0a] px-2.5 py-1 text-[11px] font-mono font-bold text-emerald-400 rounded-full border border-emerald-500/30 shadow-lg">
-              {soc.toFixed(1)}%
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center w-full max-w-5xl z-10">
+        {/* Battery Node Section */}
+        <div className="flex items-center justify-end">
+          <div className="flex items-center gap-6 relative">
+            {/* Left: Metrics Column */}
+            <div className="flex flex-col items-end gap-1.5">
+              <div className="flex flex-col items-end">
+                <span className="text-[7px] uppercase tracking-widest text-zinc-500 font-bold">Voltage</span>
+                <span className="text-[11px] font-mono text-emerald-400/90 font-bold">{vBat.toFixed(1)}V</span>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="text-[7px] uppercase tracking-widest text-zinc-500 font-bold">SOC</span>
+                <span className="text-[11px] font-mono text-emerald-400/90 font-bold">{soc.toFixed(1)}%</span>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="text-[7px] uppercase tracking-widest text-zinc-500 font-bold">Temp</span>
+                <span className="text-[11px] font-mono text-emerald-400/90 font-bold">{batTemp.toFixed(1)}°C</span>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="text-[7px] uppercase tracking-widest text-zinc-500 font-bold">Delta</span>
+                <span className="text-[11px] font-mono text-emerald-400/90 font-bold">Δ{cellDelta.toFixed(0)}m</span>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="text-[7px] uppercase tracking-widest text-zinc-500 font-bold">Cycles</span>
+                <span className="text-[11px] font-mono text-emerald-400/90 font-bold">{cycleCount}c</span>
+              </div>
             </div>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="text-emerald-500 font-mono font-semibold text-xl leading-none">{formatWatts(batteryPower)}</div>
-            <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mt-2 font-semibold">
-              {isCharging ? 'Charging' : isDischarging ? 'Discharging' : 'Idle'}
-            </div>
-          </div>
-        </div>
 
-        {/* Horizontal Line Inverter <-> Battery */}
-        <div className="flex-1 flex items-center justify-center px-1">
-           <div className={cn(
-             "h-1.5 w-full rounded-full relative transition-colors duration-500",
-             isCharging ? "flow-line-reverse text-emerald-500 bg-emerald-500/10" : 
-             isDischarging ? "flow-line text-emerald-500 bg-emerald-500/10" : "bg-zinc-800/50"
-           )} />
+            {/* Icon & Flow Info Column */}
+            <div className="flex flex-col items-center">
+              <div className="w-20 h-20 rounded-full bg-[#050505] border border-emerald-500/30 flex items-center justify-center text-emerald-500 mb-3 shadow-[0_0_30px_rgba(16,185,129,0.15)] relative">
+                <Battery size={40} />
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="text-emerald-500 font-mono font-semibold text-xl leading-none">{formatWatts(batteryPower)}</div>
+                <div className="text-[9px] uppercase tracking-[0.2em] text-zinc-500 mt-1 font-bold">
+                  {isCharging ? 'Charging' : isDischarging ? 'Discharging' : 'Idle'}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Line to Inverter */}
+          <div className={cn(
+            "h-1.5 w-12 md:w-20 lg:w-32 mx-4 rounded-full relative transition-colors duration-500",
+            isCharging ? "flow-line-reverse text-emerald-500 bg-emerald-500/10" : 
+            isDischarging ? "flow-line text-emerald-500 bg-emerald-500/10" : "bg-zinc-800/50"
+          )} />
         </div>
 
         {/* Inverter Node */}
@@ -189,57 +283,162 @@ const PowerFlow = ({
           </div>
         </div>
 
-        {/* Horizontal Line Inverter -> Load */}
-        <div className="flex-1 flex items-center justify-center px-1">
-           <div className={cn(
-             "h-1.5 w-full rounded-full relative transition-colors duration-500",
-             isLoadActive ? "flow-line text-cyan-500 bg-cyan-500/10" : "bg-zinc-800/50"
-           )} />
-        </div>
-
-        {/* Load Node */}
-        <div className="flex flex-col items-center w-40">
-          <div className="w-20 h-20 rounded-full bg-[#050505] border border-cyan-500/30 flex items-center justify-center text-cyan-500 mb-3 shadow-[0_0_20px_rgba(6,182,212,0.1)]">
-            <Home size={40} />
+        {/* Load Node Section */}
+        <div className="flex items-center justify-start">
+          {/* Line from Inverter */}
+          <div className={cn(
+            "h-1.5 w-12 md:w-20 lg:w-32 mx-4 rounded-full relative transition-colors duration-500",
+            isLoadActive ? "flow-line text-cyan-500 bg-cyan-500/10" : "bg-zinc-800/50"
+          )} />
+          
+          <div className="flex flex-col items-center w-40">
+            <div className="w-20 h-20 rounded-full bg-[#050505] border border-cyan-500/30 flex items-center justify-center text-cyan-500 mb-3 shadow-[0_0_20px_rgba(6,182,212,0.1)] relative">
+              <Home size={40} />
+              <div className="absolute -bottom-1 bg-[#0a0a0a] px-2 py-0.5 text-[9px] font-mono text-cyan-500/80 rounded-full border border-cyan-500/20 shadow-sm">
+                {fEps.toFixed(1)}Hz
+              </div>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="text-cyan-500 font-mono font-semibold text-xl leading-none">{formatWatts(loadPower)}</div>
+              <div className="text-[9px] uppercase tracking-[0.2em] text-zinc-500 mt-1 font-bold">House Load</div>
+            </div>
           </div>
-          <div className="text-cyan-500 font-mono font-semibold text-xl leading-none">{formatWatts(loadPower)}</div>
-          <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mt-2 font-semibold">Home Load</div>
         </div>
       </div>
     </div>
   );
 };
 
-const MetricCard = ({ title, value, unit, icon: Icon, colorClass, strokeColor, data, dataKey }: any) => {
+const SystemOverview = ({ 
+  currentValues, 
+  soc, 
+  vBat, 
+  invTemp, 
+  cycleCount, 
+  fEps 
+}: { 
+  currentValues: Record<string, number>,
+  soc: number,
+  vBat: number,
+  invTemp: number,
+  cycleCount: number,
+  fEps: number
+}) => {
+  const categorize = (name: string) => {
+    const n = name.toLowerCase();
+    if (n.includes('volt') || n.startsWith('eg4_v')) return 'Voltage';
+    if (n.includes('amp') || n.startsWith('eg4_i')) return 'Current';
+    if (n.includes('power') || n.includes('watt') || n.startsWith('eg4_p') || n.startsWith('eg4_s')) return 'Power';
+    if (n.includes('temp') || n.startsWith('eg4_t')) return 'Temperature';
+    if (n.includes('soc') || n.includes('percent')) return 'Percentage';
+    if (n.includes('freq') || n.startsWith('eg4_f')) return 'Frequency';
+    if (n.includes('energy') || n.includes('yield') || n.startsWith('eg4_e')) return 'Energy';
+    return 'System';
+  };
+
+  const categories: Record<string, [string, number][]> = {};
+  Object.entries(currentValues).forEach(([name, val]) => {
+    const cat = categorize(name);
+    if (!categories[cat]) categories[cat] = [];
+    categories[cat].push([name, val]);
+  });
+
+  const icons: Record<string, any> = {
+    'Voltage': Gauge,
+    'Current': Activity,
+    'Power': Zap,
+    'Temperature': Thermometer,
+    'Percentage': Battery,
+    'Frequency': RefreshCw,
+    'Energy': Sun,
+    'System': Settings
+  };
+
+  const colors: Record<string, string> = {
+    'Voltage': 'text-purple-400',
+    'Current': 'text-blue-400',
+    'Power': 'text-amber-400',
+    'Temperature': 'text-rose-400',
+    'Percentage': 'text-emerald-400',
+    'Frequency': 'text-cyan-400',
+    'Energy': 'text-amber-500',
+    'System': 'text-zinc-400'
+  };
+
+  // Key metrics to highlight at the top
+  const keyMetrics = [
+    { value: soc, label: 'SOC', unit: '%', icon: Battery, color: 'text-emerald-500' },
+    { value: vBat, label: 'Battery', unit: 'V', icon: Zap, color: 'text-purple-500' },
+    { value: invTemp, label: 'Inverter', unit: '°C', icon: Thermometer, color: 'text-rose-500' },
+    { value: cycleCount, label: 'Cycles', unit: '', icon: RefreshCw, color: 'text-blue-500' },
+    { value: fEps, label: 'Grid', unit: 'Hz', icon: Activity, color: 'text-cyan-500' },
+  ];
+
   return (
-    <div className="widget-card p-4 flex flex-col gap-3 group">
-      <div className="flex justify-between items-start">
-        <div className="flex items-center gap-3">
-          <div className={cn("p-2 rounded-xl bg-white/5", colorClass)}>
-            <Icon size={20} />
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
+      className="widget-card"
+    >
+      {/* Key Metrics Row */}
+      <div className="grid grid-cols-2 md:grid-cols-5 divide-x divide-white/5 border-b border-white/5 bg-white/[0.01]">
+        {keyMetrics.map((m, idx) => (
+          <div key={idx} className="p-3 flex flex-col items-center justify-center gap-1">
+            <div className="flex items-center gap-2 text-[8px] uppercase tracking-widest text-zinc-500">
+              <m.icon size={10} className={m.color} />
+              {m.label}
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-lg font-mono font-bold text-white">
+                {m.value !== undefined ? m.value.toFixed(1) : '--'}
+              </span>
+              <span className="text-[9px] font-mono text-zinc-600">{m.unit}</span>
+            </div>
           </div>
-          <span className="text-xs uppercase tracking-widest font-semibold text-zinc-400">{title}</span>
-        </div>
-        <div className="text-right flex items-baseline gap-1">
-          <span className="text-2xl font-mono font-medium text-white">{value}</span>
-          {unit && <span className="text-xs font-mono text-zinc-500">{unit}</span>}
+        ))}
+      </div>
+
+      <div className="px-4 py-2 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
+        <h2 className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-500 flex items-center gap-2">
+          <LayoutGrid size={14} />
+          System Parameters Overview
+        </h2>
+        <div className="flex gap-4">
+           {Object.keys(categories).sort().map(cat => (
+             <div key={cat} className="flex items-center gap-1.5">
+               <div className={cn("w-1.5 h-1.5 rounded-full", colors[cat]?.replace('text-', 'bg-') || 'bg-zinc-500')} />
+               <span className="text-[8px] uppercase tracking-widest text-zinc-600">{cat}</span>
+             </div>
+           ))}
         </div>
       </div>
-      <div className="h-10 w-full opacity-40 group-hover:opacity-100 transition-opacity duration-500">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <Line 
-              type="monotone" 
-              dataKey={dataKey} 
-              stroke={strokeColor} 
-              strokeWidth={2} 
-              dot={false} 
-              isAnimationActive={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+      <div className="p-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-x-8 gap-y-6">
+        {Object.entries(categories).sort().map(([cat, metrics]) => {
+          const Icon = icons[cat] || Settings;
+          return (
+            <div key={cat} className="space-y-2.5">
+              <div className="flex items-center gap-2 pb-1.5 border-b border-white/5">
+                <Icon size={12} className={colors[cat] || 'text-zinc-400'} />
+                <span className="text-[9px] uppercase tracking-widest font-bold text-zinc-400">{cat}</span>
+              </div>
+              <div className="space-y-1.5">
+                {metrics.sort().map(([name, val]) => (
+                  <div key={name} className="flex justify-between items-center group">
+                    <span className="text-[9px] text-zinc-500 truncate mr-2 group-hover:text-zinc-300 transition-colors" title={name}>
+                      {name.replace('eg4_', '').replace(/_/g, ' ')}
+                    </span>
+                    <span className="text-[10px] font-mono font-medium text-white px-1 py-0.5 rounded bg-white/[0.02] border border-white/[0.03]">
+                      {val.toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -347,10 +546,10 @@ export default function App() {
         setError(`Prometheus API Error: ${errorMsg}`);
       }
 
-      // 2. Fetch history for key metrics (last 3 hours)
+      // 2. Fetch history for key metrics (last 48 hours)
       const now = Math.floor(Date.now() / 1000);
-      const start = now - 3 * 3600;
-      const step = '240s'; // 4-minute steps to match data resolution
+      const start = now - 48 * 3600;
+      const step = '450s'; // 7.5-minute steps for 48 hours (4x resolution)
 
       const historyQueries = [
         { name: 'pv_power', query: 'eg4_ppv1 + eg4_ppv2' },
@@ -438,6 +637,8 @@ export default function App() {
   const invTemp = getVal(['eg4_tinner', 'eg4_temp_inv', 'eg4_inverter_temp']) || 0;
   const batTemp = getVal(['eg4_bmsmincelltemp', 'eg4_temp_bat', 'eg4_battery_temp']) || 0;
   const cycleCount = getVal(['eg4_bmscyclecnt', 'eg4_battery_cycles']) || 0;
+  const vBat = getVal(['eg4_vbat', 'eg4_battery_voltage', 'eg4_v_bat']) || 0;
+  const fEps = getVal(['eg4_feps', 'eg4_output_frequency', 'eg4_f_eps']) || 0;
   const cellDelta = (getVal(['eg4_bmsmaxcellvolt']) && getVal(['eg4_bmsmincellvolt'])) 
     ? (getVal(['eg4_bmsmaxcellvolt'])! - getVal(['eg4_bmsmincellvolt'])!) * 1000 
     : 0;
@@ -565,219 +766,145 @@ export default function App() {
         )}
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Left Column: Power Flow & Distribution (Spans 2 cols on lg) */}
-          <div className="lg:col-span-2 space-y-4">
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="widget-card relative overflow-hidden min-h-[400px]"
-            >
-              {/* Background Area Chart */}
-              <div className="absolute inset-0 z-0 opacity-50">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={historyData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorPv" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={colors.amber} stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor={colors.amber} stopOpacity={0}/>
-                      </linearGradient>
-                      <linearGradient id="colorLoad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={colors.cyan} stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor={colors.cyan} stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                    <XAxis 
-                      dataKey="time" 
-                      tickFormatter={formatTime} 
-                      stroke="#52525b" 
-                      fontSize={10} 
-                      tickLine={false}
-                      axisLine={false}
-                      minTickGap={30}
-                    />
-                    <YAxis 
-                      stroke="#52525b" 
-                      fontSize={10} 
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(v) => `${v}W`}
-                    />
-                    <Area 
-                      type="stepAfter" 
-                      dataKey="pv_power" 
-                      stroke={colors.amber} 
-                      strokeWidth={2}
-                      fillOpacity={1} 
-                      fill="url(#colorPv)" 
-                      name="PV Power"
-                    />
-                    <Area 
-                      type="stepAfter" 
-                      dataKey="load_power" 
-                      stroke={colors.cyan} 
-                      strokeWidth={2}
-                      fillOpacity={1} 
-                      fill="url(#colorLoad)" 
-                      name="Load Power"
-                    />
-                    <Line 
-                      type="stepAfter" 
-                      dataKey="battery_power" 
-                      stroke={colors.emerald} 
-                      strokeWidth={2}
-                      dot={false}
-                      name="Battery Power"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Foreground Power Flow */}
-              <div className="relative z-10 p-4 bg-[#050505]/20 h-full flex flex-col">
-                <div className="flex items-center justify-end mb-2">
-                  <div className="flex gap-4">
-                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-400">
-                      <div className="w-2 h-2 rounded-full bg-amber-500" />
-                      <span>PV</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-400">
-                      <div className="w-2 h-2 rounded-full bg-cyan-500" />
-                      <span>Load</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-400">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                      <span>Batt</span>
-                    </div>
-                  </div>
+        <div className="flex flex-col gap-2">
+          {/* Top Row: Power Flow */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="widget-card relative overflow-hidden flex flex-col"
+          >
+            {/* Header Area */}
+            <div className="px-2 py-2 border-b border-white/5 flex items-center justify-between bg-[#050505]/40 backdrop-blur-sm relative z-20">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
+                  <Activity size={18} />
                 </div>
-                <div className="flex-1 flex items-center justify-center">
-                  <PowerFlow 
-                    pvPower={pvPower} 
-                    pv1Power={pv1Power} 
-                    pv2Power={pv2Power} 
-                    pv1Voltage={pv1Voltage}
-                    pv2Voltage={pv2Voltage}
-                    loadPower={loadPower} 
-                    pCharge={pCharge} 
-                    pDischarge={pDischarge} 
-                    soc={soc} 
-                    invTemp={invTemp}
-                    batTemp={batTemp}
-                    cellDelta={cellDelta}
-                    cycleCount={cycleCount}
+                <div>
+                  <h2 className="text-sm font-bold text-white uppercase tracking-widest">Live Power Flow</h2>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-tighter">Real-time distribution & conversion</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-400">
+                  <div className="w-2 h-2 rounded-full bg-amber-500" />
+                  <span>PV</span>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-400">
+                  <div className="w-2 h-2 rounded-full bg-cyan-500" />
+                  <span>Load</span>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-400">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span>Batt</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Power Flow Visualization */}
+            <div className="flex-1 flex items-center justify-center px-2 py-4 relative z-10">
+              <PowerFlow 
+                pvPower={pvPower} 
+                pv1Power={pv1Power} 
+                pv2Power={pv2Power} 
+                pv1Voltage={pv1Voltage}
+                pv2Voltage={pv2Voltage}
+                loadPower={loadPower} 
+                pCharge={pCharge} 
+                pDischarge={pDischarge} 
+                soc={soc} 
+                invTemp={invTemp}
+                batTemp={batTemp}
+                cellDelta={cellDelta}
+                cycleCount={cycleCount}
+                vBat={vBat}
+                fEps={fEps}
+              />
+            </div>
+          </motion.div>
+
+          {/* Middle Row: Historical Graph */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="widget-card h-[160px] relative overflow-hidden flex flex-col"
+          >
+            <div className="px-4 py-2 border-b border-white/5 flex items-center justify-between bg-[#050505]/20">
+              <span className="text-[10px] uppercase tracking-widest font-bold text-zinc-500">48H Power Distribution</span>
+              <span className="text-[9px] text-zinc-600 font-mono">Step: 7.5m</span>
+            </div>
+            <div className="flex-1 p-2 opacity-60">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={historyData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorPv" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={colors.amber} stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor={colors.amber} stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorLoad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={colors.cyan} stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor={colors.cyan} stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                  <XAxis 
+                    dataKey="time" 
+                    tickFormatter={formatTime} 
+                    stroke="#52525b" 
+                    fontSize={10} 
+                    tickLine={false}
+                    axisLine={false}
+                    minTickGap={30}
                   />
-                </div>
-                <div className="flex justify-center mt-4 pb-2">
-                  <h2 className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500/80 flex items-center gap-1.5">
-                    <Activity size={14} />
-                    Live Power Flow & Distribution (3H)
-                  </h2>
-                </div>
-              </div>
-            </motion.div>
-          </div>
+                  <YAxis 
+                    stroke="#52525b" 
+                    fontSize={10} 
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v) => `${v}W`}
+                  />
+                  <Area 
+                    type="stepAfter" 
+                    dataKey="pv_power" 
+                    stroke={colors.amber} 
+                    strokeWidth={2}
+                    fillOpacity={1} 
+                    fill="url(#colorPv)" 
+                    name="PV Power"
+                  />
+                  <Area 
+                    type="stepAfter" 
+                    dataKey="load_power" 
+                    stroke={colors.cyan} 
+                    strokeWidth={2}
+                    fillOpacity={1} 
+                    fill="url(#colorLoad)" 
+                    name="Load Power"
+                  />
+                  <Area 
+                    type="stepAfter" 
+                    dataKey="battery_power" 
+                    stroke={colors.emerald} 
+                    strokeWidth={2}
+                    fillOpacity={0} 
+                    dot={false}
+                    name="Battery Power"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
 
-          {/* Right Column: Key Metrics Grid */}
-          <div className="space-y-3">
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
-              <MetricCard 
-                title="Battery SOC" 
-                value={soc ? soc.toFixed(1) : '--'} 
-                unit="%" 
-                icon={Battery} 
-                colorClass="text-emerald-500" 
-                strokeColor={colors.emerald}
-                data={historyData} 
-                dataKey="soc" 
-              />
-            </motion.div>
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
-              <MetricCard 
-                title="Today's Yield" 
-                value={todayEnergy ? todayEnergy.toFixed(1) : '--'} 
-                unit="kWh" 
-                icon={Sun} 
-                colorClass="text-amber-500" 
-                strokeColor={colors.amber}
-                data={historyData} 
-                dataKey="today_energy" 
-              />
-            </motion.div>
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
-              <MetricCard 
-                title="Battery Voltage" 
-                value={getVal(['eg4_vbat']) ? getVal(['eg4_vbat'])?.toFixed(2) : '--'} 
-                unit="V" 
-                icon={Zap} 
-                colorClass="text-purple-500" 
-                strokeColor={colors.purple}
-                data={historyData} 
-                dataKey="battery_voltage" 
-              />
-            </motion.div>
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
-              <MetricCard 
-                title="Inverter Temp" 
-                value={getVal(['eg4_tinner', 'eg4_temp_inv', 'eg4_inverter_temp']) ? getVal(['eg4_tinner', 'eg4_temp_inv', 'eg4_inverter_temp'])?.toFixed(1) : '--'} 
-                unit="°C" 
-                icon={Thermometer} 
-                colorClass="text-rose-500" 
-                strokeColor={colors.rose}
-                data={historyData} 
-                dataKey="inv_temp" 
-              />
-            </motion.div>
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}>
-              <MetricCard 
-                title="Cell Delta" 
-                value={(getVal(['eg4_bmsmaxcellvolt']) && getVal(['eg4_bmsmincellvolt'])) ? ((getVal(['eg4_bmsmaxcellvolt'])! - getVal(['eg4_bmsmincellvolt'])!) * 1000).toFixed(1) : '--'} 
-                unit="mV" 
-                icon={Gauge} 
-                colorClass="text-blue-500" 
-                strokeColor={colors.blue}
-                data={historyData} 
-                dataKey="cell_delta" 
-              />
-            </motion.div>
-          </div>
+          {/* Bottom Row: Compact System Overview */}
+          <SystemOverview 
+            currentValues={currentValues} 
+            soc={soc}
+            vBat={vBat}
+            invTemp={invTemp}
+            cycleCount={cycleCount}
+            fEps={fEps}
+          />
         </div>
-
-        {/* Bottom: Raw Telemetry */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="widget-card"
-        >
-          <div className="p-4 border-b border-white/[0.02] flex items-center justify-between">
-            <h2 className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500 flex items-center gap-1.5">
-              <Activity size={14} />
-              Raw Telemetry
-            </h2>
-            <span className="text-[9px] text-zinc-500 uppercase tracking-widest">{Object.keys(currentValues).length} Parameters Active</span>
-          </div>
-          <div className="max-h-[300px] overflow-y-auto">
-            <div className="grid grid-cols-[2fr_1fr_1fr] gap-4 px-4 py-2 border-b border-white/[0.02] bg-white/[0.01] text-[9px] uppercase tracking-widest font-semibold text-zinc-500 sticky top-0 backdrop-blur-md z-10">
-              <div>Metric Name</div>
-              <div className="text-right">Value</div>
-              <div>Status</div>
-            </div>
-            <div className="divide-y divide-white/[0.02]">
-              {Object.entries(currentValues).sort().map(([name, val]) => (
-                <div key={name} className="data-row px-4">
-                  <div className="font-mono text-[10px] text-zinc-400">{name}</div>
-                  <div className="text-right font-mono text-[10px] font-medium text-white">{val.toLocaleString()}</div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-1 h-1 rounded-full bg-emerald-500" />
-                    <span className="text-[9px] uppercase tracking-widest text-zinc-500">Nominal</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
 
         {/* Footer */}
         <footer className="pt-4 pb-2 flex flex-col md:flex-row justify-between items-center gap-3 text-[9px] text-zinc-600 uppercase tracking-[0.2em]">
