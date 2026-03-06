@@ -150,10 +150,11 @@ const PowerFlow = ({
   };
 
   return (
-    <div className="flex flex-col items-center justify-center py-2 relative w-full max-w-md mx-auto scale-[0.85] sm:scale-100 origin-top">
+    <div className="flex flex-col items-center justify-center py-8 relative w-full max-w-[500px] mx-auto scale-[0.85] sm:scale-100 origin-top gap-20">
       
-      {/* ROW 1: PV Nodes */}
-      <div className="flex justify-between w-full px-4 relative z-10">
+      {/* ROW 1: Solar */}
+      <div className="flex justify-between items-center w-full relative z-10">
+        {/* PV1 */}
         <div className="flex flex-col items-center relative w-24">
           <AnimatedSolarPanel isActive={Math.abs(pv1Power) > 2} color={colors.amber} />
           <div className="flex flex-col items-center mt-2">
@@ -162,6 +163,25 @@ const PowerFlow = ({
           </div>
         </div>
 
+        {/* Total Solar */}
+        <div className="relative z-10">
+          <SolarPowerNode isActive={isPVActive} color={colors.amber} power={pvPower} />
+
+          {/* Horizontal Lines connected to sides of Total Solar */}
+          <div className="absolute top-1/2 -translate-y-1/2 left-[-104px] w-[104px] h-1.5 z-0">
+            <div className={cn("w-full h-full rounded-full", Math.abs(pv1Power) > 2 ? "flow-line text-amber-500 bg-amber-500/10" : "bg-zinc-800/50")} />
+          </div>
+          <div className="absolute top-1/2 -translate-y-1/2 right-[-104px] w-[104px] h-1.5 z-0">
+            <div className={cn("w-full h-full rounded-full", Math.abs(pv2Power) > 2 ? "flow-line-reverse text-amber-500 bg-amber-500/10" : "bg-zinc-800/50")} />
+          </div>
+
+          {/* Vertical Line down to Inverter */}
+          <div className="absolute bottom-[-80px] left-1/2 -translate-x-1/2 w-1.5 h-[80px] z-0">
+            <div className={cn("w-full h-full rounded-full", isPVActive ? "flow-line-vertical text-amber-500 bg-amber-500/10" : "bg-zinc-800/50")} />
+          </div>
+        </div>
+
+        {/* PV2 */}
         <div className="flex flex-col items-center relative w-24">
           <AnimatedSolarPanel isActive={Math.abs(pv2Power) > 2} color={colors.amber} />
           <div className="flex flex-col items-center mt-2">
@@ -171,94 +191,8 @@ const PowerFlow = ({
         </div>
       </div>
 
-      {/* ROW 2: Total Solar Node */}
-      <div className="relative z-10 mt-12 mb-16">
-        <SolarPowerNode isActive={isPVActive} color={colors.amber} power={pvPower} />
-
-        {/* Horizontal Lines connected to sides of Total Solar */}
-        <div className="absolute top-1/2 -translate-y-1/2 left-[-112px] w-[112px] h-1.5 z-0">
-          <div className={cn("w-full h-full rounded-full", Math.abs(pv1Power) > 2 ? "flow-line text-amber-500 bg-amber-500/10" : "bg-zinc-800/50")} />
-        </div>
-        <div className="absolute top-1/2 -translate-y-1/2 right-[-112px] w-[112px] h-1.5 z-0">
-          <div className={cn("w-full h-full rounded-full", Math.abs(pv2Power) > 2 ? "flow-line-reverse text-amber-500 bg-amber-500/10" : "bg-zinc-800/50")} />
-        </div>
-
-        {/* Vertical Lines up to PV1 & PV2 */}
-        <div className="absolute top-1/2 left-[-112px] w-1.5 h-[64px] -translate-x-1/2 -translate-y-full z-0">
-          <div className={cn("w-full h-full rounded-full", Math.abs(pv1Power) > 2 ? "flow-line-vertical text-amber-500 bg-amber-500/10" : "bg-zinc-800/50")} />
-        </div>
-        <div className="absolute top-1/2 right-[-112px] w-1.5 h-[64px] translate-x-1/2 -translate-y-full z-0">
-          <div className={cn("w-full h-full rounded-full", Math.abs(pv2Power) > 2 ? "flow-line-vertical text-amber-500 bg-amber-500/10" : "bg-zinc-800/50")} />
-        </div>
-
-        {/* Vertical Line down to Inverter */}
-        <div className="absolute bottom-[-64px] left-1/2 -translate-x-1/2 w-1.5 h-[64px] z-0">
-          <div className={cn("w-full h-full rounded-full", isPVActive ? "flow-line-vertical text-amber-500 bg-amber-500/10" : "bg-zinc-800/50")} />
-        </div>
-      </div>
-
-      {/* ROW 3: Inverter */}
-      <div className="relative z-10 mb-8">
-        <div className="w-[100px] h-[100px] rounded-2xl bg-[#050505] border border-zinc-800/50 flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.9)] relative overflow-hidden">
-          <svg width="90" height="90" viewBox="0 0 100 100" className="absolute inset-auto">
-            <g className={cn("origin-center transition-all duration-500", isActive ? "animate-slow-spin" : "")}>
-              <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="4 8" className="text-zinc-700" />
-              <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="6" strokeDasharray="10 10" className="text-zinc-800" />
-            </g>
-            <g className={cn("origin-center transition-all duration-500", isActive ? "animate-slow-spin-reverse" : "")}>
-              <circle cx="50" cy="50" r="28" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="6 6" className="text-zinc-600" />
-              <polygon points="50,14 54,22 46,22" fill="currentColor" className={isActive ? "text-emerald-500/40" : "text-zinc-700"} />
-              <polygon points="50,86 46,78 54,78" fill="currentColor" className={isActive ? "text-emerald-500/40" : "text-zinc-700"} />
-              <polygon points="14,50 22,46 22,54" fill="currentColor" className={isActive ? "text-emerald-500/40" : "text-zinc-700"} />
-              <polygon points="86,50 78,54 78,46" fill="currentColor" className={isActive ? "text-emerald-500/40" : "text-zinc-700"} />
-            </g>
-            <path 
-              d="M 32 50 Q 41 30 50 50 T 68 50" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="4" 
-              strokeLinecap="round"
-              className={cn("transition-colors duration-500", isActive ? "text-emerald-400" : "text-zinc-600")} 
-            />
-          </svg>
-        </div>
-        <div className="flex flex-col items-center gap-1 mt-3 absolute -bottom-12 left-1/2 -translate-x-1/2 w-40">
-          <div className="text-[9px] uppercase tracking-[0.2em] font-bold text-zinc-400 text-center">EG4 6000XP Inverter</div>
-          <div className="flex items-center gap-1 bg-rose-500/5 px-2 py-0.5 rounded-full border border-rose-500/10 text-[9px] font-mono text-rose-500/80">
-            <Thermometer size={10} />
-            <span>{invTemp.toFixed(1)}°C</span>
-          </div>
-        </div>
-
-        {/* Horizontal Lines connected to sides of Inverter */}
-        <div className="absolute top-1/2 -translate-y-1/2 left-[-110px] w-[110px] h-1.5 z-0">
-          <div className={cn("w-full h-full rounded-full", 
-            isCharging ? "flow-line-reverse text-emerald-500 bg-emerald-500/10" : 
-            isDischarging ? "flow-line text-emerald-500 bg-emerald-500/10" : "bg-zinc-800/50"
-          )} />
-        </div>
-        <div className="absolute top-1/2 -translate-y-1/2 right-[-110px] w-[110px] h-1.5 z-0">
-          <div className={cn("w-full h-full rounded-full", 
-            isLoadActive ? "flow-line text-cyan-500 bg-cyan-500/10" : "bg-zinc-800/50"
-          )} />
-        </div>
-
-        {/* Vertical Lines down to Battery & Load */}
-        <div className="absolute top-1/2 left-[-110px] w-1.5 h-[80px] -translate-x-1/2 z-0">
-          <div className={cn("w-full h-full rounded-full", 
-            isCharging ? "flow-line-vertical text-emerald-500 bg-emerald-500/10" : 
-            isDischarging ? "flow-line-vertical-reverse text-emerald-500 bg-emerald-500/10" : "bg-zinc-800/50"
-          )} />
-        </div>
-        <div className="absolute top-1/2 right-[-110px] w-1.5 h-[80px] translate-x-1/2 z-0">
-          <div className={cn("w-full h-full rounded-full", 
-            isLoadActive ? "flow-line-vertical text-cyan-500 bg-cyan-500/10" : "bg-zinc-800/50"
-          )} />
-        </div>
-      </div>
-
-      {/* ROW 4: Battery & Load Nodes */}
-      <div className="flex justify-between w-full px-4 relative z-10">
+      {/* ROW 2: Storage & Load */}
+      <div className="flex justify-between items-center w-full relative z-10">
         {/* Battery */}
         <div className="flex flex-col items-center w-24">
           <div className="w-16 h-16 rounded-full bg-[#050505] border border-emerald-500/30 flex items-center justify-center text-emerald-500 mb-2 shadow-[0_0_20px_rgba(16,185,129,0.1)] relative">
@@ -273,6 +207,53 @@ const PowerFlow = ({
               <span className="text-[9px] font-mono text-emerald-400/90">{vBat.toFixed(1)}V</span>
               <span className="text-[9px] font-mono text-emerald-400/90">{soc.toFixed(1)}%</span>
             </div>
+          </div>
+        </div>
+
+        {/* Inverter */}
+        <div className="relative z-10">
+          <div className="w-[100px] h-[100px] rounded-2xl bg-[#050505] border border-zinc-800/50 flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.9)] relative overflow-hidden">
+            <svg width="90" height="90" viewBox="0 0 100 100" className="absolute inset-auto">
+              <g className={cn("origin-center transition-all duration-500", isActive ? "animate-slow-spin" : "")}>
+                <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="4 8" className="text-zinc-700" />
+                <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="6" strokeDasharray="10 10" className="text-zinc-800" />
+              </g>
+              <g className={cn("origin-center transition-all duration-500", isActive ? "animate-slow-spin-reverse" : "")}>
+                <circle cx="50" cy="50" r="28" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="6 6" className="text-zinc-600" />
+                <polygon points="50,14 54,22 46,22" fill="currentColor" className={isActive ? "text-emerald-500/40" : "text-zinc-700"} />
+                <polygon points="50,86 46,78 54,78" fill="currentColor" className={isActive ? "text-emerald-500/40" : "text-zinc-700"} />
+                <polygon points="14,50 22,46 22,54" fill="currentColor" className={isActive ? "text-emerald-500/40" : "text-zinc-700"} />
+                <polygon points="86,50 78,54 78,46" fill="currentColor" className={isActive ? "text-emerald-500/40" : "text-zinc-700"} />
+              </g>
+              <path 
+                d="M 32 50 Q 41 30 50 50 T 68 50" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="4" 
+                strokeLinecap="round"
+                className={cn("transition-colors duration-500", isActive ? "text-emerald-400" : "text-zinc-600")} 
+              />
+            </svg>
+          </div>
+          <div className="flex flex-col items-center gap-1 mt-3 absolute -bottom-12 left-1/2 -translate-x-1/2 w-40">
+            <div className="text-[9px] uppercase tracking-[0.2em] font-bold text-zinc-400 text-center">EG4 6000XP Inverter</div>
+            <div className="flex items-center gap-1 bg-rose-500/5 px-2 py-0.5 rounded-full border border-rose-500/10 text-[9px] font-mono text-rose-500/80">
+              <Thermometer size={10} />
+              <span>{invTemp.toFixed(1)}°C</span>
+            </div>
+          </div>
+
+          {/* Horizontal Lines connected to sides of Inverter */}
+          <div className="absolute top-1/2 -translate-y-1/2 left-[-104px] w-[104px] h-1.5 z-0">
+            <div className={cn("w-full h-full rounded-full", 
+              isCharging ? "flow-line-reverse text-emerald-500 bg-emerald-500/10" : 
+              isDischarging ? "flow-line text-emerald-500 bg-emerald-500/10" : "bg-zinc-800/50"
+            )} />
+          </div>
+          <div className="absolute top-1/2 -translate-y-1/2 right-[-104px] w-[104px] h-1.5 z-0">
+            <div className={cn("w-full h-full rounded-full", 
+              isLoadActive ? "flow-line text-cyan-500 bg-cyan-500/10" : "bg-zinc-800/50"
+            )} />
           </div>
         </div>
 
